@@ -127,7 +127,7 @@ class Mysql(object):
 
     def get_rows_by_sql(self, sql=None):
         """
-        获取记录总数
+        获取记录
         :return:
         """
         if self.is_conn_open() is False:
@@ -144,6 +144,52 @@ class Mysql(object):
             cursor.close()
             # print rows
             return rows
+        except Exception, e:
+            print e
+
+    def delete(self, table_name, condition=None):
+        """
+        删除表记录
+        """
+        if self.is_conn_open() is False:
+            print '连接已断开'
+            return None
+        try:
+            cursor = self.conn.cursor()
+            if condition is not None:
+                sql_condition = 'where '
+                sql_condition += ' and '.join(condition)
+            else:
+                sql_condition = ''
+            sql = 'delete from %s %s' % (table_name, sql_condition)
+            print sql
+            result = cursor.execute(sql)
+            cursor.close()
+            self.conn.commit()
+            return result
+        except Exception, e:
+            print e
+
+    def insert(self, table_name, data={}):
+        """
+        插入表记录
+        """
+        if self.is_conn_open() is False:
+            print '连接已断开'
+            return None
+        if not data:
+            return None
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("set NAMES UTF8")  # 解决乱码
+            sql_keys = ', '.join(str(item) for item in data.keys())
+            sql_vals = ', '.join("'%s'" % str(item) for item in data.values())
+            sql = 'insert into %s(%s) values(%s)' % (table_name, sql_keys, sql_vals)
+            print sql
+            result = cursor.execute(sql)
+            cursor.close()
+            self.conn.commit()
+            return result
         except Exception, e:
             print e
 

@@ -459,6 +459,19 @@ Tornado安装
     如果是企业网站特别是有业务运营的云服务器，
     如淘宝品牌、企业电子商务平台、企业微信平台网站、微客来之类的网站，都推荐带宽选择3M-5M起。
 
+    出网(KBPS) 
+    是访客使用的带宽 也就是我们所说的带宽
+    入网(KBPS) 
+    我在云主机上没有下载东西用的流量
+    
+    入网=上行（上传速度）
+    出网=下行（下载速度）
+    
+    
+    上行带宽：表现为上传速度
+    下行带宽：表现为下载速度
+
+
 框架选择
 
     世上没有最好的框架，只有最适合你自己、最适合你的团队的框架。
@@ -549,6 +562,17 @@ $ sudo pip install MySQL-python
 ```
 $ sudo apt-get install libmysqlclient-dev python-dev
 ```
+原因：安装的是 mariadb 服务，所以需要安装：
+```
+$ sudo apt-get install libmariadbclient-dev
+```
+如果没有安装mysql/mariadb服务，还需要提前安装:
+```
+$ sudo apt-get install libmysqld-dev
+or
+$ sudo apt-get install libmariadbd-dev
+```
+
 
 说明：
 python版本的MySQL库（不建议使用这个）
@@ -595,6 +619,8 @@ $ sudo pip install psycopg2
 $ sudo su postgres
 或者
 $ sudo su - postgres
+# Mac下切换
+$ sudo su _postgres
 # 登录postgres数据库
 $ psql postgres
 # 提示如下：
@@ -644,11 +670,96 @@ psql (PostgreSQL) 9.3.9
 \?：查看psql命令列表。
 \l：列出所有数据库。
 \c [database_name]：连接其他数据库。
-\d：列出当前数据库的所有表格。
+\d：列出当前数据库的所有表，包括模式。
+\dt：列出当前数据库的所有表。
 \d [table_name]：列出某一张表格的结构。
 \du：列出所有用户。
 \e：打开文本编辑器。
 \conninfo：列出当前数据库和连接的信息。
+```
+
+终端远程连接 postgres 命令
+```
+$ psql -h [ip] -p [port] -U [user] -d [database]
+```
+
+打开扩展，格式化显示查询结果，使用 \x 切换显示效果
+```
+wl_crawl=# \x
+Expanded display is on.
+wl_crawl=# select * from [table] limit 10;
+wl_crawl=# \x
+Expanded display is off.
+wl_crawl=# select * from [table] limit 10;
+```
+
+建立索引
+```
+create index idx_tab_col on tab(col);
+tab: 表名
+col: 字段名
+```
+
+删除索引
+```
+drop index idx_tab_col
+```
+
+虽然索引的目的在于提高数据库的性能，有时间时，应避免。使用索引时，应重新考虑下列准则:
+
+- 索引不应该被用于小表上。
+- 有频繁的，大批量的更新或插入操作的表。
+- 索引不应使用含有大量的NULL值的列。
+- 频繁操作的列都将不建议使用索引。
+
+
+psql 是一个普通的 PostgreSQL 客户端应用。
+
+为了与一个数据库联接，你需要知道你的目标数据库， 服务器的主机名和端口号以及你希望以哪个用户的身份进行联接等信息。
+
+我们可以通过命令行参数告诉 psql 这些信息，分别是 -d， -h，-p，和 -U。
+
+如果有个参数不属于任何选项开关， 那么它会被解释成数据库名（或者是用户名——如果数据库名称已经给出了。）
+
+所以，上面远程连接可以有很多写法，是很方便，但是建议指明参数，后面调试起来方便。
+
+
+postgresql 版本升级
+
+https://www.postgresql.org/download/linux/ubuntu/
+
+```
+$ sudo vim /etc/apt/sources.list.d/pgdg.list
+```
+添加以下内容并保存
+```
+deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main
+```
+
+Import the repository signing key, and update the package lists
+```
+$ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+$ sudo apt-get update
+```
+
+确认当前 postgresql 服务是否关闭，并卸载旧版本，安装新版
+```
+$ netstat -ant | grep 5432
+$ sudo service postgresql stop
+```
+
+修改旧版本端口号为5433, 再安装新版本, 新版本端口号才能为5432
+
+否则新版本端口号会默认为5433
+
+```
+$ sudo apt-get remove postgresql-9.3
+$ sudo apt-get install postgresql-9.5
+```
+
+```
+$ sudo vim /etc/postgresql/9.5/main/postgresql.conf
+$ sudo vim /etc/postgresql/9.5/main/pg_hba.conf
 ```
 
 
@@ -818,6 +929,8 @@ field                   field
 
 [ElasticSearch中文指南](http://www.elasticsearch.cn/guide/)
 
+[Elasticsearch 权威指南（中文版）](http://es.xiaoleilu.com/)
+
 [Python Elasticsearch Client](http://elasticsearch-py.readthedocs.org/en/latest/)
 
 [PyES - Python Elastic Search](http://pyes.readthedocs.org/en/latest/index.html)
@@ -832,7 +945,38 @@ $ pip search redis
 $ sudo pip install redis
 ```
 
+删除 redis 所有 KEY
+
+批量删除 Key
+Redis 中有删除单个 Key 的指令 DEL，但好像没有批量删除 Key 的指令，不过我们可以借助 Linux 的 xargs 指令来完成这个动作
+```
+redis-cli keys "*" | xargs redis-cli del
+```
+如果 redis-cli 没有设置成系统变量，需要指定 redis-cli 的完整路径
+如：/opt/redis/redis-cli keys "*" | xargs /opt/redis/redis-cli del
+
+如果要指定 Redis 数据库访问密码，使用下面的命令
+```
+redis-cli -a password keys "*" | xargs redis-cli -a password del
+```
+如果要访问 Redis 中特定的数据库，使用下面的命令
+```
+# 下面的命令指定数据序号为0，即默认数据库
+redis-cli -n 0 keys "*" | xargs redis-cli -n 0 del
+```
+删除所有 Key，可以使用 Redis 的 flushdb 和 flushall 命令
+```
+# 删除当前数据库中的所有Key
+flushdb
+# 删除所有数据库中的key
+flushall
+```
+注：keys 指令可以进行模糊匹配，但如果 Key 含空格，就匹配不到了，暂时还没发现好的解决办法。
+
+
 [官方文档](https://pypi.python.org/pypi/redis)
+
+[Redis 命令参考](http://doc.redisfans.com/)
 
 
 ## Python的XML库
@@ -874,6 +1018,28 @@ soup = BeautifulSoup("<html>data</html>")
 
 [官方文档](http://www.crummy.com/software/BeautifulSoup/bs4/doc.zh/)
 
+
+## mysql workbench
+
+使用 mysql workbench 建表时，字段中有PK,NN,UQ,BIN,UN,ZF,AI几个基本字段类型标识。
+它们分别代表的意思是：
+```
+PK：primary key 主键
+NN：not null 非空
+UQ：unique 唯一索引
+BIN：binary 二进制数据（比text更大）
+UN：unsigned 无符号（非负数）
+ZF：zero fill 填充0 例如字段内容是1 int(4), 则内容显示为0001
+AI：auto increment 自增
+```
+
+## web 性能测试
+
+```
+$ sudo apt-get install apache2-utils
+$ ab -n 100 -c 10 http://www.flask_app.com/
+$ ab -n 10000 -c 100 http://www.flask_app.com/blog/new/
+```
 
 ## Google Image Search API (Deprecated)
 
@@ -937,6 +1103,166 @@ github项目地址：
 
 [github排名](https://github.com/showcases/web-application-frameworks?s=stars)
 
+
+## json 序列化 反序列化
+
+直接对应：
+
+JSON类型 | Python类型
+----|------
+{} | dict
+[] | list
+"string" | 'str'或u'unicode'
+1234.56 | int或float
+true/false | True/False
+null | None
+
+需要特殊处理：
+
+JSON类型 | Python类型
+----|------
+"2016-07-09 23:02:12" | datetime.datetime
+"2016-07-09" | datetime.date
+"12.68" | decimal.Decimal
+
+
+```
+import json
+from datetime import date, datetime
+from decimal import Decimal
+
+
+def __default(obj):
+    """
+    支持 datetime Decimal 的 json encode
+    TypeError: datetime.datetime(2015, 10, 21, 8, 42, 54) is not JSON serializable
+    :param obj:
+    :return:
+    """
+    if isinstance(obj, datetime):
+        return obj.strftime('%Y-%m-%d %H:%M:%S')
+    elif isinstance(obj, date):
+        return obj.strftime('%Y-%m-%d')
+    elif isinstance(obj, Decimal):
+        return str(obj)
+    else:
+        raise TypeError('%r is not JSON serializable' % obj)
+
+
+row = {
+    'db': {
+        'host': '127.0.0.1',
+        'port': 3306
+    },
+    'proxy': [
+        'http://127.0.0.1:1080',
+        'https://127.0.0.1:1080'
+    ],
+    'test_none': None,
+    'test_bool': True,
+    'time': datetime.now(),
+    'price': Decimal('12.68'),
+    'time_list': [
+        datetime.now()
+    ]
+}
+
+print json.dumps(row, indent=4, ensure_ascii=False, default=__default)
+{
+    "time_list": [
+        "2016-07-09 23:02:12"
+    ],
+    "price": "12.68",
+    "db": {
+        "host": "127.0.0.1",
+        "port": 3306
+    },
+    "test_bool": true,
+    "test_none": null,
+    "proxy": [
+        "http://127.0.0.1:1080",
+        "https://127.0.0.1:1080"
+    ],
+    "time": "2016-07-09 23:02:12"
+}
+```
+
+## 分库分表
+
+单表数据过大时，影响查询效率，可以根据业务逻辑进行合理的分表，库的操作同理
+
+通常按照主键取模，为了便于扩展，这里对偶数取模
+
+```
+➜  ~ mysql.server start
+Starting MySQL
+. SUCCESS!
+➜  ~ mysql
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 3
+Server version: 10.1.17-MariaDB Homebrew
+
+Copyright (c) 2000, 2016, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> select 1%4, 2%4, 3%4, 4%4, 5%4, 6%4, 7%4, 8%4;
++------+------+------+------+------+------+------+------+
+| 1%4  | 2%4  | 3%4  | 4%4  | 5%4  | 6%4  | 7%4  | 8%4  |
++------+------+------+------+------+------+------+------+
+|    1 |    2 |    3 |    0 |    1 |    2 |    3 |    0 |
++------+------+------+------+------+------+------+------+
+1 row in set (0.00 sec)
+
+MariaDB [(none)]> select 1%8, 2%8, 3%8, 4%8, 5%8, 6%8, 7%8, 8%8;
++------+------+------+------+------+------+------+------+
+| 1%8  | 2%8  | 3%8  | 4%8  | 5%8  | 6%8  | 7%8  | 8%8  |
++------+------+------+------+------+------+------+------+
+|    1 |    2 |    3 |    4 |    5 |    6 |    7 |    0 |
++------+------+------+------+------+------+------+------+
+1 row in set (0.00 sec)
+
+MariaDB [(none)]>
+```
+
+
+## strace 调试跟踪
+
+```
+strace -p [pid] -tt -s 1024 -o /tmp/[pid].log
+```
+
+
+## 理解 tuple (元祖)
+
+为什么当tuple只有一个item时，需要加逗号
+
+```
+In [1]: (3+4)*5
+Out[1]: 35
+
+In [2]: (3+4,)*5
+Out[2]: (7, 7, 7, 7, 7)
+```
+
+```
+In [3]: type(('fuck'))
+Out[3]: str
+
+In [4]: type(('fuck',))
+Out[4]: tuple
+```
+
+Not the parentheses make the tuple, the commas do.
+
+
+## 文档托管
+
+Read the Docs
+
+创建、托管和浏览文档。
+
+[https://readthedocs.org/](https://readthedocs.org/)
 
 ## TODO
 

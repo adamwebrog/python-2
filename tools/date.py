@@ -2,7 +2,8 @@
 __author__ = 'zhanghe'
 
 import time
-import datetime
+from datetime import datetime, timedelta
+from pytz import timezone, utc
 
 
 def add_time(time_str, second):
@@ -16,6 +17,57 @@ def add_time(time_str, second):
         return '0000-00-00 00:00:00'
     new_time_stamp = time.localtime(time.mktime(time.strptime(time_str, '%Y-%m-%d %H:%M:%S')) + second)
     return time.strftime('%Y-%m-%d %H:%M:%S', new_time_stamp)
+
+
+def interval_time(interval_type='year'):
+    """
+    获取时间差
+    """
+    # 方法一
+    old_date = datetime.date(*time.strptime('2009-09-07', '%Y-%m-%d')[:3])
+    new_date = datetime.date(*time.localtime()[:3])
+    diff_days = (new_date-old_date).days
+    print '%d' % round((diff_days if diff_days > 0 else 0)/365.0, 0)
+    # 方法二
+    diff_seconds = time.time() - time.mktime(time.strptime('2008-09-07', '%Y-%m-%d'))
+    diff_years = '%d' % round((diff_seconds if diff_seconds > 0 else 0)/(365*24*3600), 0)
+    print diff_years
+    # diff_years = 0
+    print (u'%s年工作经验' % diff_years) if int(diff_years) > 0 else u'无工作经验'
+
+
+def time_pretty(delta_s):
+    """
+    时间友好显示
+    :param delta_s:
+    :return:
+    """
+    delta_s *= 1.00
+    result = ''
+    if delta_s >= (365 * 24 * 60 * 60):
+        count = int(delta_s / (365 * 24 * 60 * 60))
+        result += '%s年' % count
+        delta_s -= count * 365 * 24 * 60 * 60
+    if delta_s >= (30 * 24 * 60 * 60):
+        count = int(delta_s / (30 * 24 * 60 * 60))
+        result += '%s月' % count
+        delta_s -= count * 30 * 24 * 60 * 60
+    if delta_s >= (24 * 60 * 60):
+        count = int(delta_s / (24 * 60 * 60))
+        result += '%s天' % count
+        delta_s -= count * 24 * 60 * 60
+    if delta_s >= (60 * 60):
+        count = int(delta_s / (60 * 60))
+        result += '%s小时' % count
+        delta_s -= count * 60 * 60
+    if delta_s >= 60:
+        count = int(delta_s / 60)
+        result += '%s分' % count
+        delta_s -= count * 60
+    if delta_s > 0:
+        count = int(delta_s)
+        result += '%s秒' % count
+    return result
 
 
 def test():
@@ -64,13 +116,43 @@ def test():
     # 日期时间元祖 datetime tuple(datetime obj)
     # MySql中DATETIME类型 对应的就是 python里的这种类型
     # 注意与时间元祖的区别
-    print datetime.datetime.now()  # 2015-09-07 22:15:03.419781
-    print type(datetime.datetime.now())  # <type 'datetime.datetime'>
+    print datetime.now()  # 2015-09-07 22:15:03.419781
+    print type(datetime.now())  # <type 'datetime.datetime'>
 
     # 日期时间元祖 转为 时间元祖
     # date.timetuple()：返回日期对应的time.struct_time对象
-    print datetime.datetime.now().timetuple()  # time.struct_time(tm_year=2015, tm_mon=9, tm_mday=7, tm_hour=22, tm_min=18, tm_sec=22, tm_wday=0, tm_yday=250, tm_isdst=-1)
-    print type(datetime.datetime.now().timetuple())  # <type 'time.struct_time'>
+    print datetime.now().timetuple()  # time.struct_time(tm_year=2015, tm_mon=9, tm_mday=7, tm_hour=22, tm_min=18, tm_sec=22, tm_wday=0, tm_yday=250, tm_isdst=-1)
+    print type(datetime.now().timetuple())  # <type 'time.struct_time'>
+
+    # 字符串日期转星期(星期（0-6），星期天为星期的开始)
+    print time.strftime('%w', time.strptime('2016-01-17', '%Y-%m-%d'))
+
+    # 格式转换
+    print time.strftime('%Y-%m-%d %H:%M:%S', time.strptime('5/6/2016 10:02:47 PM', '%m/%d/%Y %I:%M:%S %p'))
+
+    # 当前年份(4位)
+    print datetime.now().year
+
+    # 获取2个月之后的日期
+    print datetime.now() + timedelta(days=60)
+
+    # 显示友好时间
+    print time_pretty(60 * 60 * 24 * 3 + 60 * 60 * 2 + 60 * 3)
+
+    # 字符串转对象
+    print datetime.strptime('2016-06-06', "%Y-%m-%d").date(), type(datetime.strptime('2016-06-06', "%Y-%m-%d").date())
+    print datetime.strptime('2016-06-06 12:34:54', "%Y-%m-%d %H:%M:%S")
+    # print datetime.strptime('2016-06', "%Y-%m-%d %H:%M:%S")  # 异常ValueError
+
+    # 显示毫秒
+    print datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+
+    # iso时间
+    print datetime.utcnow().isoformat()
+    print datetime.utcnow().date().isoformat()
+    print datetime(2002, 10, 27, 12, 0, 0, tzinfo=utc).strftime('%Y-%m-%dT%H:%M:%S%Z%z')
+    print datetime.now().replace(microsecond=0, tzinfo=utc)
+    print datetime.fromtimestamp(0, timezone('Asia/Shanghai'))
 
 
 if __name__ == "__main__":
@@ -89,7 +171,7 @@ if __name__ == "__main__":
 
 3.python中时间日期格式化符号：
     %y 两位数的年份表示（00-99）
-    %Y 四位数的年份表示（000-9999）
+    %Y 四位数的年份表示（0000-9999）
     %m 月份（01-12）
     %d 月内中的一天（0-31）
     %H 24小时制小时数（0-23）
@@ -120,5 +202,17 @@ if __name__ == "__main__":
 
 time模块的官方文档
 https://docs.python.org/2/library/time.html
+
+
+模拟 http response header Date 时间格式:
+
+格林威治时间
+In [4]: time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+Out[4]: 'Mon, 11 Dec 2017 12:04:25 GMT'
+
+本地时区时间
+In [5]: time.strftime("%a, %d %b %Y %H:%M:%S %Z")
+Out[5]: 'Mon, 11 Dec 2017 20:04:45 CST'
+
 
 """
